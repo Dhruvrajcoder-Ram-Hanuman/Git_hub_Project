@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculation Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #020408;
+            font-family: 'Orbitron', monospace;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0,245,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,245,255,0.04) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridScroll 20s linear infinite;
+            z-index: 0;
+        }
+        @keyframes gridScroll {
+            from { transform: translateY(0); }
+            to   { transform: translateY(50px); }
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.1) 2px,
+                rgba(0, 0, 0, 0.1) 4px
+            );
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .hi {
+            display: none;
+            font-size: 60px;
+            font-weight: 900;
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 6px;
+            text-align: center;
+        }
+
+        .hi.body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: #020408;
+            color: #00ff88;
+            text-shadow: 0 0 20px #00ff88, 0 0 60px #00ff8855;
+            animation: flashPulse 0.5s ease;
+        }
+        @keyframes flashPulse {
+            from { opacity: 0; transform: scale(0.85); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
+        #te {
+            position: relative;
+            z-index: 10;
+            width: 460px;
+            max-width: 95vw;
+            background: #05101a;
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            padding: 44px 36px 36px;
+            text-align: center;
+        }
+
+        #te::before, #te::after {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-color: #00f5ff;
+            border-style: solid;
+            opacity: 0.7;
+        }
+        #te::before { top: -1px;    left: -1px;  border-width: 2px 0 0 2px; }
+        #te::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+        /* Top glow line on card */
+        #te > *:first-child::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #00f5ff, transparent);
+            opacity: 0.5;
+        }
+
+        h1 {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            color: rgba(255, 238, 0, 0.85);
+            text-shadow: 0 0 10px #ffee00, 0 0 30px #ffee0055;
+            white-space: pre-line;   /* keeps the \n line break from JS */
+            margin-bottom: 28px;
+            line-height: 1.8;
+        }
+
+        .s {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(34px, 9vw, 52px);
+            font-weight: 900;
+            letter-spacing: 5px;
+            color: #ffffff;
+            text-shadow: 0 0 18px rgba(255,255,255,0.25);
+            margin-bottom: 32px;
+            min-height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .text {
+            font-family: 'Orbitron', monospace;
+            font-size: 26px;
+            font-weight: 700;
+            color: #00f5ff;
+            background: rgba(0, 245, 255, 0.05);
+            border: 1.5px solid rgba(0, 245, 255, 0.35);
+            padding: 12px 16px;
+            width: 160px;
+            text-align: center;
+            outline: none;
+            letter-spacing: 4px;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            caret-color: #ff0080;
+        }
+        .text::-webkit-outer-spin-button,
+        .text::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+        .text:focus {
+            border-color: #00f5ff;
+            box-shadow: 0 0 10px #00f5ff, 0 0 30px #00f5ff44;
+            background: rgba(0, 245, 255, 0.09);
+        }
+
+        .text::placeholder { color: rgba(0, 245, 255, 0.3); }
+
+        .no { display: none; }
+
+        #hint {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 3px;
+            color: rgba(255, 255, 255, 0.18);
+            margin-top: 14px;
+        }
+
+        #start-prompt {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 4px;
+            color: #ff0080;
+            text-shadow: 0 0 10px #ff0080, 0 0 30px #ff008055;
+            border: 1px solid #ff0080;
+            display: inline-block;
+            padding: 9px 22px;
+            margin-top: 24px;
+            animation: blinkGlow 1.4s ease-in-out infinite;
+        }
+        @keyframes blinkGlow {
+            0%, 100% { opacity: 1;  box-shadow: 0 0 10px #ff0080, 0 0 30px #ff008055; }
+            50%       { opacity: 0.35; box-shadow: none; }
+        }
+
+        #title {
+            font-size: clamp(22px, 5vw, 32px);
+            font-weight: 900;
+            letter-spacing: 7px;
+            background: linear-gradient(90deg, #00f5ff, #ff0080, #00f5ff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 3s linear infinite;
+            margin-bottom: 28px;
+        }
+        @keyframes shimmer {
+            from { background-position: 0% center; }
+            to   { background-position: 200% center; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="hi"></div>
+
+    <div id="te">
+        <div class="sum">
+            <div id="title">Calculation Game</div>
+            <h1></h1>
+            <h2 class="s">Press any Key To Start</h2>
+            <input type="number" class="text" placeholder="?">
+            <div id="hint">ENTER TO SUBMIT</div>
+            <div id="start-prompt">PRESS ANY KEY TO BEGIN</div>
+        </div>
+        <div class="remark"></div>
+    </div>
+
+</body>
+
+<script src="simon.js"></script>
+
+</html>
