@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIMON</title>
+    <style>
+        .btn{
+            width: 200px;
+            height: 200px;
+            background-color: red;
+            display: flex;
+            margin: 10px;
+            border: 10px solid black;
+        }
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        .mb {
+            display:flex;
+            justify-content: center;
+            max-width: 450;
+            flex-wrap:wrap;
+
+        }
+        .a{
+            background-color: red;
+        }
+        .b{
+            background-color: blue;
+        }
+        .c{
+            background-color: green;
+        }
+        .d{
+            background-color: yellow;
+        }
+        .flash{
+            background-color: white;
+            filter: brightness(1.6);
+            transition: filter 0.15s;
+        }
+        .usfl{
+            background-color: lightgreen;
+            filter: brightness(1.6);
+            transition: filter 0.15s;
+        }
+    </style>
+</head>
+<body>
+    <h1>Start Game</h1>
+    <h2>Press any key to begin</h2>
+    <div class="mb">
+    <div type="button" class="btn a"></div>
+    <div type="button" class="btn b"></div>
+    </div><div class="mb">
+    <div type="button" class="btn c"></div>
+    <div type="button" class="btn d"></div>
+    </div>
+</body>
+<script>
+    let seq=[],user=[],start=false,level=0,i=0,j=0;
+    let h2= document.querySelector("h2");
+    let a=document.querySelector(".a");
+    let b=document.querySelector(".b");
+    let c=document.querySelector(".c");
+    let d = document.querySelector(".d");
+    const btn = document.querySelectorAll(".btn");
+    let btns = [a,b,c,d];
+    let n=setInterval(() => {
+        if(j===4)
+            j=0;
+            btns[j].classList.toggle("flash");
+            setTimeout(() => {
+                btns[j].classList.toggle("flash");
+                j++;
+            }, 200);
+            }, 650)
+    document.addEventListener("keydown", function(){
+        clearInterval(n);
+        if(!start){
+            start = true;
+            lu();
+        }
+    });
+    btn.forEach(b => 
+        b.addEventListener("click", () => {
+            usfl(b);
+            user.push(btns.indexOf(b)+1);
+            console.log(btns.indexOf(b)+1);
+            console.log("user "+user);
+            console.log("seq "+seq);
+            for(i=0;i<user.length;i++){
+                if(user[i] !== seq[i]){
+                    console.log("Game Over");
+                    h2.innerText = "Game Over \n Press Any Key to Restart \n Your Score: "+level;
+                    start=false;
+                    seq=[];
+                    user=[];
+                    level=0;
+                    i=0;
+                    return;
+        }}
+        if(user.length===seq.length){
+        user=[];
+            lu();
+        }})
+    );
+
+    function fl(btn){
+        btn.classList.toggle("flash");
+        setTimeout(() => {
+            btn.classList.toggle("flash");
+        }, 250);
+    }
+    function usfl(btn){
+        btn.classList.toggle("usfl");
+        setTimeout(() => {
+            btn.classList.toggle("usfl");
+        }, 250);
+    }
+
+    function lu(){
+        level++;
+        h2.innerText = "Game Start \n Level " + level;
+        let r = Math.floor(Math.random() * 4);
+        seq.push(r+1);
+        console.log("New seq"+seq);
+        setTimeout(() => {    
+            fl(btns[r]);
+        }, 1000);
+    }
+</script>
+</html>
