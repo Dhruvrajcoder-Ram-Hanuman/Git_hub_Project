@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg:     #0f0f0f;
+            --card:   #1a1a1a;
+            --border: #2e2e2e;
+            --text:   #f0f0f0;
+            --muted:  #666;
+            --dim:    #999;
+            --accent: #c8f03a;
+            --danger: #ff5f57;
+            --mono:   'DM Mono', monospace;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        /* Layout */
+        .layout {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            max-width: 740px;
+            width: 100%;
+        }
+
+        /* Shared card */
+        .calc, .history-panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+        }
+
+        /* Calculator */
+        .calc { padding: 24px; width: 320px; flex-shrink: 0; }
+
+        .display {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 18px;
+            margin-bottom: 20px;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .expr, .result { font-family: var(--mono); font-size: 13px; min-height: 18px; }
+        .expr   { color: var(--muted); letter-spacing: 0.5px; }
+        .result { color: #8ab020; text-align: right; }
+
+        .main-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            width: 100%;
+            font-family: var(--mono);
+            font-size: 32px;
+            font-weight: 500;
+            color: var(--text);
+            text-align: right;
+            caret-color: var(--accent);
+        }
+
+        /* Keypad */
+        .keypad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+
+        .btn {
+            background: #1e1e1e;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 16px;
+            padding: 16px 0;
+            cursor: pointer;
+            transition: background 0.1s, transform 0.08s;
+            user-select: none;
+        }
+        .btn:hover  { background: #2a2a2a; }
+        .btn:active { transform: scale(0.93); }
+
+        .btn.op     { background: #2a2a2a; color: var(--accent); border-color: #3a3a2a; font-size: 18px; }
+        .btn.op:hover { background: #333; }
+
+        .btn.action { background: #242424; color: var(--dim); font-size: 13px; }
+        .btn.action:hover { background: #2e2e2e; color: var(--text); }
+
+        .btn.equals { background: var(--accent); color: #111; border-color: var(--accent); font-size: 20px; font-weight: 600; }
+        .btn.equals:hover { background: #d6f550; }
+
+        .btn.clear { color: var(--danger); }
+
+        /* History */
+        .history-panel { flex: 1; padding: 20px; max-height: 440px; display: flex; flex-direction: column; }
+
+        .history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .history-title { font-size: 12px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+
+        .clear-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .clear-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+        .history-list { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .history-list::-webkit-scrollbar       { width: 4px; }
+        .history-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        .history-item {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--dim);
+            padding: 8px 10px;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px solid transparent;
+            transition: border-color 0.15s;
+        }
+        .history-item:hover      { border-color: var(--border); }
+        .history-item .eq-result { color: var(--accent); font-weight: 500; }
+
+        .history-empty { color: var(--muted); font-size: 12px; text-align: center; padding: 30px 0; }
+
+        @media (max-width: 600px) {
+            .layout { flex-direction: column; align-items: center; }
+            .history-panel { width: 320px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="layout">
+
+    <!-- Calculator -->
+    <div class="calc">
+        <div class="display">
+            <div class="expr" id="expr"></div>
+            <input class="main-input" id="main" type="text" inputmode="decimal" autocomplete="off" placeholder="0">
+            <div class="result" id="result"></div>
+        </div>
+
+        <div class="keypad">
+            <button class="btn action" onclick="Redo()">Redo</button>
+            <button class="btn action" onclick="Undo()">Undo</button>
+            <button class="btn action"></button>
+            <button class="btn action"></button>
+            <button class="btn action clear" onclick="Reset()">C</button>
+            <button class="btn action"       onclick="Remove()">⌫</button>
+            <button class="btn action"></button>
+            
+            <button class="btn equals"       onclick="enter()" >=</button>
+
+            <button class="btn" onclick="number(7)">7</button>
+            <button class="btn" onclick="number(8)">8</button>
+            <button class="btn" onclick="number(9)">9</button>
+            <button class="btn op" onclick="operation('/')">÷</button>
+
+            <button class="btn" onclick="number(4)">4</button>
+            <button class="btn" onclick="number(5)">5</button>
+            <button class="btn" onclick="number(6)">6</button>
+            <button class="btn op" onclick="operation('*')">×</button>
+
+            <button class="btn" onclick="number(1)">1</button>
+            <button class="btn" onclick="number(2)">2</button>
+            <button class="btn" onclick="number(3)">3</button>
+            <button class="btn op" onclick="operation('-')">−</button>
+
+            <button class="btn" onclick="number(0)" style="grid-column: span 2">0</button>
+            <button class="btn" onclick="number('.')">.</button>
+            <button class="btn op" onclick="operation('+')">+</button>
+        </div>
+    </div>
+
+    <!-- History -->
+    <div class="history-panel">
+        <div class="history-header">
+            <span class="history-title">History</span>
+            <button class="clear-btn" onclick="Clear()">Clear</button>
+        </div>
+        <div class="history-list" id="historyList">
+            <div class="history-empty" id="emptyMsg">No calculations yet</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // DOM refs
+    const input    = document.getElementById('main');
+    const result   = document.getElementById('result');
+    const expr     = document.getElementById('expr');
+    const histList = document.getElementById('historyList');
+    const emptyMsg = document.getElementById('emptyMsg');
+    // State
+    let firstNum, operator, count = localStorage.length;
+
+    // Nice display symbols for operators
+    const sym = { '+': '+', '-': '−', '*': '×', '/': '÷' };
+
+    // Format number — strip floating point noise
+    const fmt = n => parseFloat(parseFloat(n).toPrecision(12)).toString();
+
+    // Add one row to the history panel
+    function addHistory(text, prepend = true) {
+        emptyMsg.style.display = 'none';
+        const [, a, op, b, res] = text.match(/^(.+?)([\+\-\*\/])(.+?)=(.+)$/);
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `${a} ${sym[op]} ${b} = <span class="eq-result">${res}</span>`;
+        prepend ? histList.prepend(div) : histList.appendChild(div);
+    }
+
+    let undo=[],redo=[];
+    function Redo(){
+        if(redo.length===0) return;
+        undo.push(input.value);
+        input.value = redo.pop();
+        console.log("Undo",undo,"Redo",redo)
+        input.focus();
+    }
+
+    function Undo(){
+        if(undo.length===0) {
+            input.value='';
+            return};
+        redo.push(input.value);
+        input.value=undo.pop();
+        console.log("Undo",undo,"Redo",redo)
+        input.focus();
+    }
+
+    function saveState() {
+    undo.push(input.value);
+    console.log(input.value);
+    if (undo.length > 100)
+        undo.shift();
+    redo = [];
+    input.focus();
+    }
+
+    
+    input.addEventListener('keydown', (e)=> {
+        if (['+', '-', '/', '*'].includes(e.key)) { e.preventDefault(); operation(e.key); }
+        if (e.key === 'Enter')  enter();
+        if (e.key === 'Escape') Reset();
+        if (e.key === 'Backspace') Remove();
+        if ((e.key >= "0" && e.key <= "9") || e.key==='.'){saveState() ;return;}
+        if(e.code==="KeyU"){Undo();}
+        if(e.code==="KeyR"){Redo();}
+        e.preventDefault();
+    });
+
+    function number(n) {
+        if (n === '.' && input.value.includes('.')) return;
+
+        input.value += n;
+        saveState()
+        input.focus();
+    }
+    function operation(op) {
+        const val = parseFloat(input.value);
+        if (isNaN(val) && operator === undefined) return;
+        if (!isNaN(val)) firstNum = val;
+        operator = op;
+        expr.textContent = `${fmt(firstNum)} ${sym[op]}`;
+        input.value = '';
+        result.textContent = '';
+        input.focus();
+    }
+
+    function enter() {
+        const second = parseFloat(input.value);
+        if (isNaN(second) || operator === undefined) return;
+
+        const ops = { '+': firstNum + second, '-': firstNum - second,
+                      '*': firstNum * second, '/': second !== 0 ? firstNum / second : 'Error' };
+        const res = ops[operator];
+        const resFmt = res === 'Error' ? 'Error' : fmt(res);
+
+        result.textContent = '= ' + resFmt;
+        const text = `${fmt(firstNum)}${operator}${fmt(second)}=${resFmt}`;
+        addHistory(text);
+        localStorage.setItem(count++, text);
+
+        input.value = res === 'Error' ? '' : resFmt;
+        expr.textContent = '';
+        operator = undefined;
+        input.focus();
+    }
+
+    function Reset() {
+        firstNum = undefined; operator = undefined;
+        input.value = ''; result.textContent = ''; expr.textContent = '';
+        saveState();
+        input.focus();
+    }
+
+    function Clear() {
+        localStorage.clear();
+        histList.innerHTML = '';
+        histList.appendChild(emptyMsg);
+        emptyMsg.style.display = '';
+        count = 0;
+        saveState()
+        input.focus();
+    }
+
+    function Remove() {
+        input.value = input.value.slice(0, -1);
+        saveState()
+        input.focus();
+    }
+
+    window.addEventListener('load', () => {
+        for (let j = 0; j < localStorage.length; j++) {
+            const entry = localStorage.getItem(j);
+            if (entry) addHistory(entry, false);
+        }
+        main.focus();
+    });
+
+
+</script>
+</body>
+</html>
